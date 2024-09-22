@@ -19,11 +19,11 @@ class ElmanRNN:
         
         # Initialize Adam optimizers
         self.optimizers = {
-            'W_ih': Adam(learning_rate),
-            'W_hh': Adam(learning_rate),
-            'b_h': Adam(learning_rate),
-            'W_ho': Adam(learning_rate),
-            'b_o': Adam(learning_rate)
+            'W_ih': Adam(learning_rate, decay=0.01),
+            'W_hh': Adam(learning_rate, decay=0.01),
+            'b_h': Adam(learning_rate, decay=0.01),
+            'W_ho': Adam(learning_rate, decay=0.01),
+            'b_o': Adam(learning_rate, decay=0.01)
         }
     
     def forward(self, x, h_prev):
