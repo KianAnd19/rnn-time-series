@@ -34,9 +34,9 @@ multi_rnn = MultiLayerRNN(input_size, hidden_sizes, output_size)
 
 # Define loss function and optimizers
 criterion = nn.MSELoss()
-elman_optimizer = optim.Adam(elman_rnn.parameters(), lr=0.01)
-jordan_optimizer = optim.Adam(jordan_rnn.parameters(), lr=0.01)
-multi_optimizer = optim.Adam(multi_rnn.parameters(), lr=0.01)
+elman_optimizer = optim.Adam(elman_rnn.parameters(), lr=0.001)
+jordan_optimizer = optim.Adam(jordan_rnn.parameters(), lr=0.001)
+multi_optimizer = optim.Adam(multi_rnn.parameters(), lr=0.001)
 
 # Train the models
 print("Training Elman RNN:")

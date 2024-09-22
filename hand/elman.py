@@ -1,5 +1,5 @@
 import numpy as np
-from utils import mse_loss, mse_loss_derivative, Adam
+from utils import mse_loss, mse_loss_derivative, xavier_distribution, Adam
 
 class ElmanRNN:
     def __init__(self, input_size, hidden_size, output_size, learning_rate=0.01):
@@ -9,9 +9,9 @@ class ElmanRNN:
         self.learning_rate = learning_rate
         
         # Initialize weights
-        self.W_ih = np.random.randn(hidden_size, input_size) * 0.01
-        self.W_hh = np.random.randn(hidden_size, hidden_size) * 0.01
-        self.W_ho = np.random.randn(output_size, hidden_size) * 0.01
+        self.W_ih = xavier_distribution(hidden_size, input_size)
+        self.W_hh = xavier_distribution(hidden_size, hidden_size)
+        self.W_ho = xavier_distribution(output_size, hidden_size)
         
         # Initialize biases
         self.b_h = np.zeros((hidden_size, 1))

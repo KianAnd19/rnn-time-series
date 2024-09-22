@@ -6,6 +6,10 @@ def mse_loss(y_true, y_pred):
 def mse_loss_derivative(y_true, y_pred):
     return 2 * (y_pred - y_true) / y_true.size
 
+def xavier_distribution(input_size, output_size):
+    temp = 6 ** 0.5 / (input_size + output_size) ** 0.5
+    return np.random.uniform(-temp, temp, (input_size, output_size))
+
 class Adam:
     def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8):
         self.learning_rate = learning_rate

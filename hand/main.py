@@ -6,14 +6,14 @@ from multi import MultiRNN
 
 # Example usage
 input_size = 2
-hidden_size = 5
+hidden_size = 10
 output_size = 1
 
-rnn = MultiRNN(input_size, hidden_size, output_size)
+rnn = ElmanRNN(input_size, hidden_size, output_size, learning_rate=0.001)
 
 # Generate some dummy data
-X = np.random.randn(100, input_size)
-Y = np.sum(X, axis=1, keepdims=True)
+X = np.random.randn(1000, 2).astype(np.float32)
+Y = np.sum(X, axis=1, keepdims=True).astype(np.float32)
 
 # Train the model
 rnn.train(X, Y, epochs=1000)
