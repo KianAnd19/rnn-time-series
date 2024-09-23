@@ -28,6 +28,14 @@ def preprocess_data(filename, sequence_length=10):
     
     return np.array(X), np.array(Y), scaler
 
+def preprocess_all_datasets(sequence_length):
+    datasets = []
+
+    
+    X, Y, scaler = preprocess_data("datasets/Electric_Production.csv", sequence_length=input_size)
+    data = []
+    X, Y, scaler = preprocess_data("datasets/Electric_Production.csv", sequence_length=input_size)
+
 
 # train on supplied dataset, then test and return accuracy.
 def train_test(rnn, X_train, X_test, Y_train, Y_test, epochs):
@@ -55,8 +63,9 @@ k = 5 # number of folds for k-fold cross validation
 epochs = 1000
 
 # Preprocess the data
-# X, Y, scaler = preprocess_data("datasets/Electric_Production.csv", sequence_length=input_size)
 X, Y, scaler = preprocess_data("datasets/Electric_Production.csv", sequence_length=input_size)
+
+size_split = int((len(X) / k)*0.8)
 
 for i in range(k-1, -1, -1):
     rnn = JordanRNN(input_size, hidden_size, output_size, learning_rate=learning_rate)
@@ -64,8 +73,8 @@ for i in range(k-1, -1, -1):
     split = int(0.8 * total_sample * len(X))
     total_sample = int(total_sample * len(X))
 
-    X_train, X_test = X[:split], X[split:total_sample]
-    Y_train, Y_test = Y[:split], Y[split:total_sample]
+    X_train, X_test = X[split-size_split:split], X[split:total_sample]
+    Y_train, Y_test = Y[split-size_split:split], Y[split:total_sample]
 
     result = train_test(rnn, X_train, X_test, Y_train, Y_test, epochs)
 
