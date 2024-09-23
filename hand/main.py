@@ -5,6 +5,8 @@ from elman import ElmanRNN
 from jordan import JordanRNN
 from multi import MultiRNN
 
+datasets = ['air_passengers', 'electric_production', 'minimum_temp', 'beer_production', 'gold_price', 'yahoo_stock']
+
 def preprocess_data(filename, sequence_length=10):
     with open(filename, "r") as f:
         lines = f.readlines()[1:]  # Skip header
@@ -27,15 +29,6 @@ def preprocess_data(filename, sequence_length=10):
         Y.append(normalized_data[i+sequence_length])
     
     return np.array(X), np.array(Y), scaler
-
-def preprocess_all_datasets(sequence_length):
-    datasets = []
-
-    
-    X, Y, scaler = preprocess_data("datasets/Electric_Production.csv", sequence_length=input_size)
-    data = []
-    X, Y, scaler = preprocess_data("datasets/Electric_Production.csv", sequence_length=input_size)
-
 
 # train on supplied dataset, then test and return accuracy.
 def train_test(rnn, X_train, X_test, Y_train, Y_test, epochs):
@@ -63,7 +56,7 @@ k = 5 # number of folds for k-fold cross validation
 epochs = 1000
 
 # Preprocess the data
-X, Y, scaler = preprocess_data("datasets/Electric_Production.csv", sequence_length=input_size)
+X, Y, scaler = preprocess_data(f'new_datasets/{datasets[2]}.csv', sequence_length=input_size)
 
 size_split = int((len(X) / k)*0.8)
 
