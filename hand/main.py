@@ -28,36 +28,45 @@ def preprocess_data(filename, sequence_length=10):
     
     return np.array(X), np.array(Y), scaler
 
+
+# train on supplied dataset, then test and return accuracy.
+def train_test(rnn, X_train, X_test, Y_train, Y_test, epochs):
+    rnn.train(X_train, Y_train, epochs=epochs)
+    predictions = rnn.predict(X_test)
+
+    # Make predictions
+    predictions = rnn.predict(X_test)
+
+    # Inverse transform the predictions and actual values
+    predictions_original = scaler.inverse_transform(predictions)
+    Y_test_original = scaler.inverse_transform(Y_test)
+
+    # Calculate Mean Absolute Error
+    mae = np.mean(np.abs(predictions_original - Y_test_original))
+    
+    return mae
+
 # Set up the RNN
 input_size = 15  # sequence length
 hidden_size = 10
 output_size = 1
 learning_rate = 1e-4
-
-rnn = JordanRNN(input_size, hidden_size, output_size, learning_rate=learning_rate)
+k = 5 # number of folds for k-fold cross validation
+epochs = 1000
 
 # Preprocess the data
 # X, Y, scaler = preprocess_data("datasets/Electric_Production.csv", sequence_length=input_size)
 X, Y, scaler = preprocess_data("datasets/Electric_Production.csv", sequence_length=input_size)
-# Split the data into training and testing sets
-split = int(0.8 * len(X))
-X_train, X_test = X[:split], X[split:]
-Y_train, Y_test = Y[:split], Y[split:]
 
-# Train the model
-rnn.train(X_train, Y_train, epochs=2000)
+for i in range(k-1, -1, -1):
+    rnn = JordanRNN(input_size, hidden_size, output_size, learning_rate=learning_rate)
+    total_sample = round(1 - ((1/k)*i), 2)
+    split = int(0.8 * total_sample * len(X))
+    total_sample = int(total_sample * len(X))
 
-# Make predictions
-predictions = rnn.predict(X_test)
+    X_train, X_test = X[:split], X[split:total_sample]
+    Y_train, Y_test = Y[:split], Y[split:total_sample]
 
-# Inverse transform the predictions and actual values
-predictions_original = scaler.inverse_transform(predictions)
-Y_test_original = scaler.inverse_transform(Y_test)
+    result = train_test(rnn, X_train, X_test, Y_train, Y_test, epochs)
 
-# Print some results
-print("Predictions:", predictions_original[-5:].flatten())
-print("Actual:", Y_test_original[-5:].flatten())
-
-# Calculate Mean Absolute Error
-mae = np.mean(np.abs(predictions_original - Y_test_original))
-print(f"Mean Absolute Error: {mae}")
+    print(total_sample, '\t', result)
