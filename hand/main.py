@@ -13,7 +13,7 @@ def preprocess_data(filename, sequence_length=10):
         data = []
         for line in lines:
             date_str, production = line.strip().split(",")
-            date = datetime.strptime(date_str, "%m/%d/%Y")
+            date = datetime.strptime(date_str, "%d/%m/%Y")
             data.append([date.timestamp(), float(production)])
     
     data = np.array(data)
@@ -43,7 +43,7 @@ def train_test(rnn, X_train, X_test, Y_train, Y_test, epochs):
     Y_test_original = scaler.inverse_transform(Y_test)
 
     # Calculate Mean Absolute Error
-    mae = np.mean(np.abs(predictions_original - Y_test_original))
+    mae = np.mean(np.abs(Y_test_original-predictions_original)/Y_test_original)*100
     
     return mae
 
@@ -56,7 +56,7 @@ k = 5 # number of folds for k-fold cross validation
 epochs = 1000
 
 # Preprocess the data
-X, Y, scaler = preprocess_data(f'new_datasets/{datasets[2]}.csv', sequence_length=input_size)
+X, Y, scaler = preprocess_data(f'new_datasets/{datasets[4]}.csv', sequence_length=input_size)
 
 size_split = int((len(X) / k)*0.8)
 
