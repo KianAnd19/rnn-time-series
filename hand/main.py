@@ -5,6 +5,7 @@ from elman import ElmanRNN
 from jordan import JordanRNN
 from multi import MultiRNN
 
+rnns = [ElmanRNN, JordanRNN, MultiRNN]
 datasets = ['air_passengers', 'electric_production', 'minimum_temp', 'beer_production', 'gold_price', 'yahoo_stock']
 
 def preprocess_data(filename, sequence_length=10):
@@ -47,6 +48,10 @@ def train_test(rnn, X_train, X_test, Y_train, Y_test, epochs):
     
     return mae
 
+######################################################
+#################### main ############################
+######################################################
+
 # Set up the RNN
 input_size = 15  # sequence length
 hidden_size = 10
@@ -55,20 +60,30 @@ learning_rate = 1e-4
 k = 5 # number of folds for k-fold cross validation
 epochs = 1000
 
-# Preprocess the data
-X, Y, scaler = preprocess_data(f'new_datasets/{datasets[4]}.csv', sequence_length=input_size)
+for rnn in rnns:
+    for i in range(5):
+        print('Dataset: ', datasets[i])
+        # Preprocess the data
+        X, Y, scaler = preprocess_data(f'new_datasets/{datasets[i]}.csv', sequence_length=input_size)
+        
+        size_split = int((len(X) / k)*0.8)
+        
+        avg_result = 0
 
-size_split = int((len(X) / k)*0.8)
+        for i in range(k-1, -1, -1):
+            rnn = rnns[0](input_size, hidden_size, output_size, learning_rate=learning_rate)
+            total_sample = round(1 - ((1/k)*i), 2)
+            split = int(0.8 * total_sample * len(X))
+            total_sample = int(total_sample * len(X))
+        
+            X_train, X_test = X[split-size_split:split], X[split:total_sample]
+            Y_train, Y_test = Y[split-size_split:split], Y[split:total_sample]
+        
+            result = train_test(rnn, X_train, X_test, Y_train, Y_test, epochs)
+            avg_result += result 
 
-for i in range(k-1, -1, -1):
-    rnn = JordanRNN(input_size, hidden_size, output_size, learning_rate=learning_rate)
-    total_sample = round(1 - ((1/k)*i), 2)
-    split = int(0.8 * total_sample * len(X))
-    total_sample = int(total_sample * len(X))
+            print(total_sample, '\t', result)
 
-    X_train, X_test = X[split-size_split:split], X[split:total_sample]
-    Y_train, Y_test = Y[split-size_split:split], Y[split:total_sample]
+        avg_result /= k
+        print('Average Result: ', avg_result)
 
-    result = train_test(rnn, X_train, X_test, Y_train, Y_test, epochs)
-
-    print(total_sample, '\t', result)

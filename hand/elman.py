@@ -57,7 +57,7 @@ class ElmanRNN:
         self.W_ho = self.optimizers['W_ho'].update(self.W_ho, dL_dWho)
         self.b_o = self.optimizers['b_o'].update(self.b_o, dL_dbo)
     
-    def train(self, X, Y, epochs):
+    def train(self, X, Y, epochs, verbose=False):
         for epoch in range(epochs):
             h = np.zeros((self.hidden_size, 1))
             total_loss = 0
@@ -81,7 +81,7 @@ class ElmanRNN:
                 
                 h = h_next
             
-            if epoch % 100 == 0:
+            if epoch % 100 == 0 and verbose:
                 print(f"Epoch {epoch}, Loss: {total_loss / len(X)}")
     
     def predict(self, X):

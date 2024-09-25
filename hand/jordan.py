@@ -57,7 +57,7 @@ class JordanRNN:
         self.b_h = self.optimizers['b_h'].update(self.b_h, dL_dbh)
         self.b_o = self.optimizers['b_o'].update(self.b_o, dL_dbo)
     
-    def train(self, X, Y, epochs):
+    def train(self, X, Y, epochs, verbose):
         for epoch in range(epochs):
             y_prev = np.zeros((self.output_size, 1))
             total_loss = 0
@@ -81,7 +81,7 @@ class JordanRNN:
                 
                 y_prev = y_pred
             
-            if epoch % 100 == 0:
+            if epoch % 100 == 0 and verbose:
                 print(f"Epoch {epoch}, Loss: {total_loss / len(X)}")
     
     
