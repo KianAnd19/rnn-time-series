@@ -4,6 +4,7 @@ from sklearn.preprocessing import MinMaxScaler
 from elman import ElmanRNN
 from jordan import JordanRNN
 from multi import MultiRNN
+from utils import linear_detrend
 
 rnns = [ElmanRNN, JordanRNN, MultiRNN]
 datasets = ['air_passengers', 'electric_production', 'minimum_temp', 'beer_production', 'gold_price', 'yahoo_stock']
@@ -18,7 +19,8 @@ def preprocess_data(filename, sequence_length=10):
             data.append([date.timestamp(), float(production)])
     
     data = np.array(data)
-    
+    # data[:, 1] = linear_detrend(data[:, 1])
+
     # Normalize the data
     scaler = MinMaxScaler()
     normalized_data = scaler.fit_transform(data[:, 1].reshape(-1, 1))
@@ -44,7 +46,7 @@ def train_test(rnn, X_train, X_test, Y_train, Y_test, epochs):
     Y_test_original = scaler.inverse_transform(Y_test)
 
     # Calculate Mean Absolute Error
-    mae = np.mean(np.abs(Y_test_original-predictions_original)/Y_test_original)*100
+    mae = np.mean(np.abs(Y_test_original-predictions_original))
     
     return mae
 
@@ -86,4 +88,4 @@ for rnn in rnns:
 
         avg_result /= k
         print('Average Result: ', avg_result)
-
+    break
