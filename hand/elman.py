@@ -26,27 +26,43 @@ class ElmanRNN:
             'b_o': Adam(learning_rate, decay=0.01)
         }
     
-    def forward(self, x, h_prev):
-        # Input to hidden
-        h = np.tanh(np.dot(self.W_ih, x) + np.dot(self.W_hh, h_prev) + self.b_h)
+    def forward(self, X, h_init):
+        T = len(X)
+        h = np.zeros((T + 1, self.hidden_size, 1))
+        y = np.zeros((T, self.output_size, 1))
+        h[0] = h_init
         
-        # Hidden to output
-        y = np.dot(self.W_ho, h) + self.b_o
+        for t in range(T):
+            x = X[t].reshape(-1, 1)
+            h[t+1] = np.tanh(np.dot(self.W_ih, x) + np.dot(self.W_hh, h[t]) + self.b_h)
+            y[t] = np.dot(self.W_ho, h[t+1]) + self.b_o
         
         return y, h
     
-    def backward(self, x, h_prev, h, y_pred, y_true):
-        dL_dy = mse_loss_derivative(y_true, y_pred)
+    def backward(self, X, Y, h, y_pred):
+        T = len(X)
+        dL_dWih = np.zeros_like(self.W_ih)
+        dL_dWhh = np.zeros_like(self.W_hh)
+        dL_dbh = np.zeros_like(self.b_h)
+        dL_dWho = np.zeros_like(self.W_ho)
+        dL_dbo = np.zeros_like(self.b_o)
         
-        dL_dWho = np.dot(dL_dy, h.T)
-        dL_dbo = dL_dy
+        dL_dh_next = np.zeros_like(h[0])
         
-        dL_dh = np.dot(self.W_ho.T, dL_dy)
-        dL_dh_raw = dL_dh * (1 - h**2)
-        
-        dL_dWih = np.dot(dL_dh_raw, x.T)
-        dL_dWhh = np.dot(dL_dh_raw, h_prev.T)
-        dL_dbh = dL_dh_raw
+        for t in reversed(range(T)):
+            dL_dy = mse_loss_derivative(Y[t].reshape(-1, 1), y_pred[t])
+            
+            dL_dWho += np.dot(dL_dy, h[t+1].T)
+            dL_dbo += dL_dy
+            
+            dL_dh = np.dot(self.W_ho.T, dL_dy) + dL_dh_next
+            dL_dh_raw = dL_dh * (1 - h[t+1]**2)
+            
+            dL_dWih += np.dot(dL_dh_raw, X[t].reshape(1, -1))
+            dL_dWhh += np.dot(dL_dh_raw, h[t].T)
+            dL_dbh += dL_dh_raw
+            
+            dL_dh_next = np.dot(self.W_hh.T, dL_dh_raw)
         
         return dL_dWih, dL_dWhh, dL_dbh, dL_dWho, dL_dbo
     
@@ -59,38 +75,26 @@ class ElmanRNN:
     
     def train(self, X, Y, epochs, verbose=False):
         for epoch in range(epochs):
-            h = np.zeros((self.hidden_size, 1))
+            h_init = np.zeros((self.hidden_size, 1))
             total_loss = 0
             
-            for t in range(len(X)):
-                x = X[t].reshape(-1, 1)
-                y_true = Y[t].reshape(-1, 1)
-                
-                # Forward pass
-                y_pred, h_next = self.forward(x, h)
-                
-                # Compute loss
-                loss = mse_loss(y_true, y_pred)
-                total_loss += loss
-                
-                # Backward pass
-                gradients = self.backward(x, h, h_next, y_pred, y_true)
-                
-                # Update parameters
-                self.update_parameters(*gradients)
-                
-                h = h_next
+            # Forward pass
+            y_pred, h = self.forward(X, h_init)
+            
+            # Compute loss
+            loss = sum([mse_loss(Y[t].reshape(-1, 1), y_pred[t]) for t in range(len(X))])
+            total_loss += loss
+            
+            # Backward pass
+            gradients = self.backward(X, Y, h, y_pred)
+            
+            # Update parameters
+            self.update_parameters(*gradients)
             
             if epoch % 100 == 0 and verbose:
                 print(f"Epoch {epoch}, Loss: {total_loss / len(X)}")
     
     def predict(self, X):
-        h = np.zeros((self.hidden_size, 1))
-        predictions = []
-        
-        for x in X:
-            x = x.reshape(-1, 1)
-            y, h = self.forward(x, h)
-            predictions.append(y.flatten())
-        
-        return np.array(predictions)
+        h_init = np.zeros((self.hidden_size, 1))
+        y_pred, _ = self.forward(X, h_init)
+        return np.array([y.flatten() for y in y_pred])

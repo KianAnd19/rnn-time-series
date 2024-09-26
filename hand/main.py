@@ -52,12 +52,13 @@ def train_test(rnn, X_train, X_test, Y_train, Y_test, epochs):
     mase = mae/((1/(len(predictions_original)-1)))
     rmse = np.sqrt(np.mean(np.power(Y_test_original-predictions_original, 2))/len(predictions_original)) 
     
-    return rmse
+    return mae, rmse
 
 def cv_validation(rnn, X, Y, scaler):
     size_split = int((len(X) / k)*0.8)
     
-    avg_result = 0
+    avg_mae = 0
+    avg_rsme = 0
 
     for i in range(k-1, -1, -1):
         total_sample = round(1 - ((1/k)*i), 2)
@@ -67,13 +68,16 @@ def cv_validation(rnn, X, Y, scaler):
         X_train, X_test = X[split-size_split:split], X[split:total_sample]
         Y_train, Y_test = Y[split-size_split:split], Y[split:total_sample]
     
-        result = train_test(rnn, X_train, X_test, Y_train, Y_test, epochs)
-        avg_result += result 
+        mae, rsme = train_test(rnn, X_train, X_test, Y_train, Y_test, epochs)
+        avg_mae += mae
+        avg_rsme += rsme
 
-        print(total_sample, '\t', result)
+        print(total_sample, '\tMAE: ', mae, 'RSME', rsme)
 
-    avg_result /= k
-    print('Average Result: ', avg_result)
+    avg_mae /= k
+    avg_rsme /= k
+    print('Average MAE: ', avg_mae)
+    print('Average RSME: ', avg_rsme)
 
 
 ######################################################
@@ -84,7 +88,7 @@ def cv_validation(rnn, X, Y, scaler):
 input_size = 15  # sequence length
 hidden_size = 10
 output_size = 1
-learning_rate = 1e-3
+learning_rate = 1e-4
 k = 5 # number of folds for k-fold cross validation
 epochs = 1000
 
