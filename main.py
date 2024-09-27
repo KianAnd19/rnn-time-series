@@ -7,6 +7,7 @@ from multi import MultiRNN
 from utils import linear_detrend
 
 rnns = [ElmanRNN, JordanRNN, MultiRNN]
+rnns = [MultiRNN]
 datasets = ['air_passengers', 'electric_production', 'minimum_temp', 'beer_production', 'gold_price', 'yahoo_stock']
 
 def preprocess_data(filename, sequence_length=10, count=0):
@@ -88,7 +89,7 @@ def cv_validation(rnn, X, Y, scaler):
 input_size = 15  # sequence length
 hidden_size = 10
 output_size = 1
-learning_rate = 1e-4
+learning_rate = 1e-3
 k = 5 # number of folds for k-fold cross validation
 epochs = 1000
 
@@ -99,6 +100,7 @@ hyperparameters = {
     'input_size': [5, 10, 15],
     'epochs': [500, 1000, 1500]
 }
+count = 0
 
 for rnn in rnns:
     for i in range(6):
@@ -109,4 +111,3 @@ for rnn in rnns:
         r = rnn(input_size, hidden_size, output_size, learning_rate=learning_rate)
         cv_validation(r, X, Y, scaler)
 
-    break
