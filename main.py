@@ -5,6 +5,7 @@ from elman import ElmanRNN
 from jordan import JordanRNN
 from multi import MultiRNN
 from utils import linear_detrend
+import itertools
 
 rnns = [ElmanRNN, JordanRNN, MultiRNN]
 rnns = [MultiRNN]
@@ -100,7 +101,9 @@ hyperparameters = {
     'input_size': [5, 10, 15],
     'epochs': [500, 1000, 1500]
 }
-count = 0
+
+# list of all the combinations of hyperparameters
+param_grid = list(itertools.product(*hyperparameters.values()))
 
 for rnn in rnns:
     for i in range(6):
