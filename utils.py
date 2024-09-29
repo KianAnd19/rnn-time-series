@@ -10,13 +10,20 @@ def xavier_distribution(input_size, output_size):
     temp = (6 ** 0.5) / ((input_size + output_size) ** 0.5)
     return np.random.uniform(-temp, temp, (input_size, output_size))
 
-def linear_detrend(data):
+def polynomial_detrend(data, degree=2):
     x = np.arange(len(data)).astype('float64')
     y = data.astype('float64')
-    slope, intercept = np.polyfit(x, y, 1)
-    trend = x * slope + intercept
+    
+    # Fit a polynomial of specified degree
+    coeffs = np.polyfit(x, y, degree)
+    
+    # Generate the polynomial trend
+    trend = np.polyval(coeffs, x)
+    
+    # Subtract the trend from the original data
     detrended = y - trend
-    return detrended
+    
+    return detrended, trend
 
 class Adam:
     def __init__(self, learning_rate=0.001, beta1=0.9, beta2=0.999, epsilon=1e-8, decay=0.0):

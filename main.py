@@ -4,7 +4,7 @@ from sklearn.preprocessing import MinMaxScaler
 from elman import ElmanRNN
 from jordan import JordanRNN
 from multi import MultiRNN
-from utils import linear_detrend
+from utils import polynomial_detrend
 import itertools
 
 rnns = [ElmanRNN, JordanRNN, MultiRNN]
@@ -23,7 +23,7 @@ def preprocess_data(filename, sequence_length=10, count=0):
     data = np.array(data)
     if(count < 4):
         print('detrend')
-        data[:, 1] = linear_detrend(data[:, 1])
+        data[:, 1] = polynomial_detrend(data[:, 1])[0]
 
     # Normalize the data
     scaler = MinMaxScaler()
