@@ -19,11 +19,12 @@ def preprocess_data(filename, sequence_length=10, count=0):
             date_str, production = line.strip().split(",")
             date = datetime.strptime(date_str, "%d/%m/%Y")
             data.append([date.timestamp(), float(production)])
-    
+
+    trend = None
     data = np.array(data)
     if(count < 4):
         print('detrend')
-        data[:, 1] = polynomial_detrend(data[:, 1])[0]
+        data[:, 1], trend = polynomial_detrend(data[:, 1])
 
     # Normalize the data
     scaler = MinMaxScaler()
@@ -35,10 +36,10 @@ def preprocess_data(filename, sequence_length=10, count=0):
         X.append(normalized_data[i:i+sequence_length])
         Y.append(normalized_data[i+sequence_length])
     
-    return np.array(X), np.array(Y), scaler
+    return np.array(X), np.array(Y), scaler, trend
 
 # train on supplied dataset, then test and return accuracy.
-def train_test(rnn, X_train, X_test, Y_train, Y_test, epochs):
+def train_test(rnn, X_train, X_test, Y_train, Y_test, epochs, scaler, trend=None):
     rnn.train(X_train, Y_train, epochs=epochs)
     predictions = rnn.predict(X_test)
 
@@ -49,18 +50,28 @@ def train_test(rnn, X_train, X_test, Y_train, Y_test, epochs):
     predictions_original = scaler.inverse_transform(predictions)
     Y_test_original = scaler.inverse_transform(Y_test)
 
+    if trend is not None:
+        # Ensure trend is the correct length
+        trend_subset = trend[-len(predictions_original):]
+        predictions_original = predictions_original.flatten() + trend_subset
+        Y_test_original = Y_test_original.flatten() + trend_subset
+    
+
     # Calculate Mean Absolute Error
+    mape = np.mean(np.abs(Y_test_original-predictions_original)/Y_test_original)/len(predictions_original)*100
+
     mae = np.mean(np.abs(Y_test_original-predictions_original))
     mase = mae/((1/(len(predictions_original)-1)))
     rmse = np.sqrt(np.mean(np.power(Y_test_original-predictions_original, 2))/len(predictions_original)) 
     
-    return mae, rmse
+    return mae, rmse, mape
 
-def cv_validation(rnn, X, Y, scaler):
+def cv_validation(rnn, X, Y, scaler, trend):
     size_split = int((len(X) / k)*0.8)
     
     avg_mae = 0
     avg_rsme = 0
+    avg_mape = 0
 
     for i in range(k-1, -1, -1):
         total_sample = round(1 - ((1/k)*i), 2)
@@ -70,17 +81,19 @@ def cv_validation(rnn, X, Y, scaler):
         X_train, X_test = X[split-size_split:split], X[split:total_sample]
         Y_train, Y_test = Y[split-size_split:split], Y[split:total_sample]
     
-        mae, rsme = train_test(rnn, X_train, X_test, Y_train, Y_test, epochs)
+        mae, rsme, mape = train_test(rnn, X_train, X_test, Y_train, Y_test, epochs, scaler, trend)
         avg_mae += mae
         avg_rsme += rsme
+        avg_mape += mape
 
-        print(total_sample, '\tMAE: ', mae, 'RSME', rsme)
+        print(total_sample, '\tMAE: ', mae, 'RSME', rsme, 'MAPE', mape)
 
     avg_mae /= k
     avg_rsme /= k
+    avg_mape /= k
     print('Average MAE: ', avg_mae)
     print('Average RSME: ', avg_rsme)
-
+    print('Average MAPE: ', avg_mape)
 
 ######################################################
 #################### main ############################
@@ -109,8 +122,8 @@ for rnn in rnns:
     for i in range(6):
         print('Dataset: ', datasets[i])
         # Preprocess the data
-        X, Y, scaler = preprocess_data(f'new_datasets/{datasets[i]}.csv', sequence_length=input_size, count=i)
+        X, Y, scaler, trend = preprocess_data(f'new_datasets/{datasets[i]}.csv', sequence_length=input_size, count=i)
         
         r = rnn(input_size, hidden_size, output_size, learning_rate=learning_rate)
-        cv_validation(r, X, Y, scaler)
+        cv_validation(r, X, Y, scaler, trend)
 
