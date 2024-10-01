@@ -173,7 +173,7 @@ def final_runs():
                                 
                 mae, rsme, mape, mse = cv_validation(r, X_test, Y_test, scaler, trend, epochs)
                 
-                print('MAPE: ', mape)
+                print(f'MSE: {mse}, MAE: {mae}, MAPE: {mape}, RSME: {rsme}\n')
 
 
 ######################################################
