@@ -6,10 +6,11 @@ from jordan import JordanRNN
 from multi import MultiRNN
 from utils import polynomial_detrend
 import itertools
+from tqdm import tqdm
 
 rnns = [ElmanRNN, JordanRNN, MultiRNN]
-rnns = [MultiRNN]
-datasets = ['air_passengers', 'electric_production', 'minimum_temp', 'beer_production', 'gold_price', 'yahoo_stock']
+#rnns = [MultiRNN]
+datasets = ['air_passengers', 'electric_production', 'beer_production', 'gold_price', 'yahoo_stock']
 
 def preprocess_data(filename, sequence_length=10, count=0):
     with open(filename, "r") as f:
@@ -22,9 +23,7 @@ def preprocess_data(filename, sequence_length=10, count=0):
 
     trend = None
     data = np.array(data)
-    if(count < 4):
-        print('detrend')
-        data[:, 1], trend = polynomial_detrend(data[:, 1])
+    data[:, 1], trend = polynomial_detrend(data[:, 1], 3)
 
     # Normalize the data
     scaler = MinMaxScaler()
@@ -58,72 +57,96 @@ def train_test(rnn, X_train, X_test, Y_train, Y_test, epochs, scaler, trend=None
     
 
     # Calculate Mean Absolute Error
-    mape = np.mean(np.abs(Y_test_original-predictions_original)/Y_test_original)/len(predictions_original)*100
-
+    mape = np.mean(np.abs(Y_test_original-predictions_original)/Y_test_original)*100
     mae = np.mean(np.abs(Y_test_original-predictions_original))
-    mase = mae/((1/(len(predictions_original)-1)))
-    rmse = np.sqrt(np.mean(np.power(Y_test_original-predictions_original, 2))/len(predictions_original)) 
+    mse = np.mean(np.sqrt(np.abs(Y_test_original-predictions_original)))
+    rmse = np.sqrt(np.mean(np.power(Y_test_original-predictions_original, 2))) 
     
-    return mae, rmse, mape
+    return mae, rmse, mape, mse
 
-def cv_validation(rnn, X, Y, scaler, trend):
+def cv_validation(rnn, X, Y, scaler, trend, epochs):
     size_split = int((len(X) / k)*0.8)
     
     avg_mae = 0
     avg_rsme = 0
     avg_mape = 0
+    avg_mse = 0
 
     for i in range(k-1, -1, -1):
         total_sample = round(1 - ((1/k)*i), 2)
         split = int(0.8 * total_sample * len(X))
-        total_sample = int(total_sample * len(X))
-    
+        total_sample = int((total_sample) * len(X))
+
         X_train, X_test = X[split-size_split:split], X[split:total_sample]
         Y_train, Y_test = Y[split-size_split:split], Y[split:total_sample]
     
-        mae, rsme, mape = train_test(rnn, X_train, X_test, Y_train, Y_test, epochs, scaler, trend)
+        mae, rsme, mape, mse = train_test(rnn, X_train, X_test, Y_train, Y_test, epochs, scaler, trend)
         avg_mae += mae
         avg_rsme += rsme
         avg_mape += mape
-
-        print(total_sample, '\tMAE: ', mae, 'RSME', rsme, 'MAPE', mape)
+        avg_mse += mse
 
     avg_mae /= k
     avg_rsme /= k
     avg_mape /= k
-    print('Average MAE: ', avg_mae)
-    print('Average RSME: ', avg_rsme)
-    print('Average MAPE: ', avg_mape)
+    avg_mse /= k
+    return avg_mae, avg_rsme, avg_mape, avg_mse
+
+def grid_search():
+    results = [[], [], []]
+
+    hyperparameters = {
+        'input_size': [5, 10, 15],
+        'hidden_size': [5, 10, 15],
+        'lr': [1e-2, 1e-3, 1e-4],
+        'epochs': [500, 1000, 1500]
+    }
+
+    names = ['Elman', 'Jordan', 'Multi']
+    
+    # list of all the combinations of hyperparameters
+    param_grid = list(itertools.product(*hyperparameters.values()))
+
+    for param in tqdm(param_grid):
+        count = 0
+        for rnn in rnns:
+            temp = []
+            for i in range(len(datasets)):
+                input_size = param[0]
+                hidden_size = param[1]
+                output_size = 1
+                learning_rate = param[2]
+                
+                X, Y, scaler, trend = preprocess_data(f'new_datasets/{datasets[i]}.csv', sequence_length=input_size, count=i)
+        
+                split = int(0.8*len(X))
+        
+                X_train, X_test = X[:split], X[split:]
+                Y_train, Y_test = Y[:split], Y[split:]
+        
+                r = rnn(input_size, hidden_size, output_size, learning_rate=learning_rate)
+                mae, rsme, mape, mse = cv_validation(r, X_train, Y_train, scaler, trend, epochs)
+                temp.append(str(mae))
+            
+            results[count].append(temp) 
+            count += 1
+
+    ## print results
+    for i in range(len(names)):
+        with open(f'results/{names[i]}.csv', 'w') as f:
+            for j in range(len(results[i])):
+                f.write(f'{param_grid[j][0]},{param_grid[j][1]},{param_grid[j][2]},{param_grid[j][3]},' + ','.join(results[i][j])+'\n')
 
 ######################################################
 #################### main ############################
 ######################################################
 
 # Set up the RNN
-input_size = 15  # sequence length
-hidden_size = 10
-output_size = 1
-learning_rate = 1e-3
-k = 5 # number of folds for k-fold cross validation
+#input_size = 15  # sequence length
+#hidden_size = 10
+#output_size = 1
+#learning_rate = 1e-3
+k = 5 # number of folds for blocked time series split 
 epochs = 1000
 
-
-hyperparameters = {
-    'lr': [1e-2, 1e-3, 1e-4, 1e-5],
-    'hidden_size': [5, 10, 15],
-    'input_size': [5, 10, 15],
-    'epochs': [500, 1000, 1500]
-}
-
-# list of all the combinations of hyperparameters
-param_grid = list(itertools.product(*hyperparameters.values()))
-
-for rnn in rnns:
-    for i in range(6):
-        print('Dataset: ', datasets[i])
-        # Preprocess the data
-        X, Y, scaler, trend = preprocess_data(f'new_datasets/{datasets[i]}.csv', sequence_length=input_size, count=i)
-        
-        r = rnn(input_size, hidden_size, output_size, learning_rate=learning_rate)
-        cv_validation(r, X, Y, scaler, trend)
-
+#grid_search()
