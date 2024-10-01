@@ -9,7 +9,7 @@ import itertools
 from tqdm import tqdm
 
 rnns = [ElmanRNN, JordanRNN, MultiRNN]
-#rnns = [MultiRNN]
+names = ['Elman', 'Jordan', 'Multi']
 datasets = ['air_passengers', 'electric_production', 'beer_production', 'gold_price', 'yahoo_stock']
 
 def preprocess_data(filename, sequence_length=10, count=0):
@@ -85,7 +85,6 @@ def cv_validation(rnn, X, Y, scaler, trend, epochs):
         avg_rsme += rsme
         avg_mape += mape
         avg_mse += mse
-
     avg_mae /= k
     avg_rsme /= k
     avg_mape /= k
@@ -102,8 +101,6 @@ def grid_search():
         'epochs': [500, 1000, 1500]
     }
 
-    names = ['Elman', 'Jordan', 'Multi']
-    
     # list of all the combinations of hyperparameters
     param_grid = list(itertools.product(*hyperparameters.values()))
 
@@ -131,11 +128,53 @@ def grid_search():
             results[count].append(temp) 
             count += 1
 
-    ## print results
+    ## print results to results/
     for i in range(len(names)):
         with open(f'results/{names[i]}.csv', 'w') as f:
             for j in range(len(results[i])):
                 f.write(f'{param_grid[j][0]},{param_grid[j][1]},{param_grid[j][2]},{param_grid[j][3]},' + ','.join(results[i][j])+'\n')
+
+def final_runs():
+    for rnn, name in zip(rnns, names):
+        print(f'{name}:')
+        with open(f'results/{name}.csv', 'r') as f:
+            results = []
+            lines = f.readlines()
+            for line in lines:
+                line = line.strip().split(',')
+                line = [float(x) for x in line]
+                results.append(line)
+
+            for dataset, i in zip(datasets, range(len(datasets))):
+                best = [0, np.inf]
+                for j in range(len(results)):
+                    if(results[j][i+4] < best[1]):
+                       best = [j, results[j][i+4]]
+
+                hyperparameters = results[best[0]][:4]
+
+                # setting the input, hidden and epochs back to int
+                hyperparameters[0] = int(hyperparameters[0])
+                hyperparameters[1] = int(hyperparameters[1])
+                hyperparameters[3] = int(hyperparameters[3])
+
+                print(dataset, ': ', best[1], hyperparameters)
+                
+                X, Y, scaler, trend = preprocess_data(f'new_datasets/{datasets[i]}.csv', sequence_length=hyperparameters[0], count=i)
+
+                
+                split = int(0.8*len(X))
+        
+                X_train, X_test = X[:split], X[split:]
+                Y_train, Y_test = Y[:split], Y[split:]
+                
+                r = rnn(hyperparameters[0], hyperparameters[1], 1, learning_rate=hyperparameters[2])
+
+                                
+                mae, rsme, mape, mse = cv_validation(r, X_test, Y_test, scaler, trend, epochs)
+                
+                print('MAPE: ', mape)
+
 
 ######################################################
 #################### main ############################
@@ -150,3 +189,4 @@ k = 5 # number of folds for blocked time series split
 epochs = 1000
 
 #grid_search()
+final_runs()
