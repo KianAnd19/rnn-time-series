@@ -170,8 +170,7 @@ def final_runs():
                 
                 r = rnn(hyperparameters[0], hyperparameters[1], 1, learning_rate=hyperparameters[2])
 
-                                
-                mae, rsme, mape, mse = cv_validation(r, X_test, Y_test, scaler, trend, epochs)
+                mae, rsme, mape, mse = train_test(r, X_train, X_test, Y_train, Y_test, epochs, scaler, trend)
                 
                 print(f'MSE: {mse}, MAE: {mae}, MAPE: {mape}, RSME: {rsme}\n')
 
