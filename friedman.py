@@ -24,7 +24,7 @@ def plot_critical_difference_diagram(ranks, sig_matrix):
     )
 
     plt.subplots_adjust(left=0.1, right=0.9, top=0.8, bottom=0.3)
-    plt.savefig('critical_difference.pdf')
+    plt.savefig('figures/critical_difference.png')
 
 def friedman_test(data):
     k = data.shape[1]  # number of models
@@ -53,30 +53,6 @@ def compute_CD(n_datasets, n_models, alpha=0.05):
     q = stats.studentized_range.ppf(q=1-alpha, k=n_models, df=np.inf)
     CD = q * np.sqrt((n_models * (n_models + 1)) / (6 * n_datasets))
     return CD
-
-def plot_CD(average_ranks, names, cd):
-    plt.figure(figsize=(10, 6))
-    
-    ax = plt.gca()
-    ax.set_xlim(0, max(average_ranks) + 1)
-    ax.set_ylim(0, len(names) * 1.5)
-    ax.invert_yaxis()
-    ax.axis('off')
-    
-    for i, (rank, name) in enumerate(sorted(zip(average_ranks, names))):
-        ax.plot([0, rank], [i * 1.5, i * 1.5], 'k')
-        ax.plot([rank, rank], [i * 1.5 - 0.1, i * 1.5 + 0.1], 'k')
-        ax.text(rank, i * 1.5 + 0.1, f"{name} ({rank:.2f})", ha='center', va='bottom')
-    
-    min_rank, max_rank = min(average_ranks), max(average_ranks)
-    cd_min, cd_max = max(min_rank, max_rank - cd), min(max_rank, min_rank + cd)
-    ax.plot([cd_min, cd_max], [-0.5, -0.5], 'k-', linewidth=2)
-    ax.text((cd_min + cd_max) / 2, -0.75, f"CD = {cd:.2f}", ha='center', va='top')
-    
-    plt.title("Critical Difference Plot")
-    plt.tight_layout()
-    plt.savefig('custom_critical_difference_plot.png')
-    plt.close()
 
 def pairwise_comparison(R_j, n_datasets, n_models):
     se = np.sqrt((n_models * (n_models + 1)) / (6 * n_datasets))
@@ -159,8 +135,4 @@ latex_table += r"""\end{tabular}
 \end{table}"""
 
 print(latex_table)
-
-# Save to a file
-with open('pairwise_comparison_results.tex', 'w') as f:
-    f.write(latex_table)
 

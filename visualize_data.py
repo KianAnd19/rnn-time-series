@@ -53,4 +53,4 @@ for dataset in datasets:
     plt.legend(['Original Time Series', 'Detrended Time Series'])
     plt.title(dataset)
     plt.xticks(rotation=45)
-    plt.savefig(f'figures/{dataset}.pdf')
+    plt.savefig(f'figures/{dataset}.png')
