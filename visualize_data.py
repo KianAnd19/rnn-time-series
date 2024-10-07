@@ -53,4 +53,49 @@ for dataset in datasets:
     plt.legend(['Original Time Series', 'Detrended Time Series'])
     plt.title(dataset)
     plt.xticks(rotation=45)
-    plt.savefig(f'figures/{dataset}.png')
+    plt.savefig(f'figures/{dataset}.pdf')
+
+
+## plot final results in a bar chart
+
+results = []
+with open(f'results/final.csv') as f:
+    lines = f.readlines()
+    temp = []
+    for line in lines:
+        line = line.strip().split(',')
+        line = [float(x) for x in line]
+        results.append(line)
+print(results)          
+results = np.array(results).T
+ 
+    
+index = ['air_passengers', 'beer_production', 'electric_production', 'gold_price', 'yahoo_stock']
+df = pd.DataFrame({'Elman RNN': results[0], 'Jordan RNN': results[1], 'Multi RNN': results[2]}, index=index)
+import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
+
+
+# Set the color palette (coolwarm, rocket)
+# color_palette = sns.color_palette("rocket", n_colors=6)[::-1]
+color_palette = sns.color_palette("Blues_d", n_colors=3)
+
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.set_position([0.1, 0.1, 0.7, 0.8])  # Shift the bar chart to the left
+
+df.plot.bar(ax=ax, rot=0, color=color_palette, zorder=2)
+
+# Add horizontal grid lines behind the bars
+ax.grid(axis='y', linestyle='--', zorder=1, alpha=0.7)
+
+# Move the legend outside the plot
+ax.legend(loc='center left', bbox_to_anchor=(1.01, 0.5), borderaxespad=0.)
+
+ax.set_ylabel('MAPE (%)')
+ax.set_xlabel('Dataset')
+ax.set_title('Performance of RNN Architectures', fontweight='bold')
+
+plt.tight_layout()
+plt.savefig('figures/results.png', bbox_inches='tight')

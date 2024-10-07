@@ -57,6 +57,9 @@ The models were evaluated based on the following metrics:
 Each dataset was split into 80% training and 20% testing sets, ensuring no data leakage. The training data was further processed using blocked time series split to evaluate the performance with cross-validation.
 
 ## Results
+
+![Model Performance](./figures/results.png)
+
 ### Elman RNN
 - Best Dataset: Electric Production
 - Worst Performance: Air Passengers (high MAPE and RMSE)
